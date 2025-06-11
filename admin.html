@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 대시보드 - 법인콘도 예약 시스템</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    
+    <!-- Chart.js for 통계 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <style>
+        .admin-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .admin-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-selected {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status-cancelled {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.6s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .modal-enter {
+            animation: modalEnter 0.3s ease-out;
+        }
+        
+        @keyframes modalEnter {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .search-highlight {
+            background: yellow;
+            font-weight: bold;
+        }
+        
+        .admin-table {
+            font-size: 14px;
+        }
+        
+        .admin-table th {
+            background: #f8fafc;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .admin-table tr:hover {
+            background: #f8fafc;
+        }
+        
+        .btn-loading {
+            position: relative;
+        }
+        
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin: -8px 0 0 -8px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .stats-card.green {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        }
+        
+        .stats-card.orange {
+            background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+        }
+        
+        .stats-card.red {
+            background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .auth-required {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="min-h-screen flex items-center justify-center">
+        <div class="text-center">
+            <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-600 text-lg">시스템 초기화 중...</p>
+        </div>
+    </div>
+
+    <!-- 로그인 화면 -->
+    <div id="login-screen" class="hidden min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+            <!-- 로그인 메시지 영역 -->
+            <div id="login-success" class="hidden bg-green-500 text-white p-3 rounded-xl mb-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span id="login-success-text">로그인 성공!</span>
+                </div>
+            </div>
+
+            <div id="login-error" class="hidden bg-red-500 text-white p-3 rounded-xl mb-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span id="login-error-text">오류가 발생했습니다.</span>
+                </div>
+            </div>
+            
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-2">관리자 로그인</h1>
+                <p class="text-gray-600">법인콘도 예약 시스템 관리자 대시보드</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">이메일</label>
+                    <input type="email" 
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors" 
+                           id="admin-email" 
+                           placeholder="관리자 이메일을 입력하세요" 
+                           value="admin@company.com">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">비밀번호</label>
+                    <input type="password" 
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors" 
+                           id="admin-password" 
+                           placeholder="비밀번호를 입력하세요">
+                </div>
+                
+                <button id="login-btn" 
+                        class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:-translate-y-1">
+                    <span id="login-text">로그인</span>
+                </button>
+            </div>
+            
+            <!-- 관리자 계정 생성 안내 -->
+            <div class="mt-6 p-4 auth-required rounded-xl">
+                <h4 class="font-semibold text-gray-800 mb-2">⚠️ 최초 설정 필요</h4>
+                <p class="text-sm text-gray-700 mb-3">
+                    관리자 계정이 없는 경우, 먼저 계정을 생성해야 합니다.
+                </p>
+                <button id="create-admin-btn" 
+                        class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                    관리자 계정 생성
+                </button>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <p class="text-sm text-gray-500">
+                    개발/테스트용: admin@company.com
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 대시보드 -->
+    <div id="admin-dashboard" class="hidden">
+        <!-- 헤더 -->
+        <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div>
+                        <h1 class="text-3xl font-bold">관리자 대시보드</h1>
+                        <p class="text-blue-100 mt-1">2025년 하계성수기 법인콘도 예약 관리</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <!-- Firebase 상태 표시 -->
+                        <div id="firebase-status-indicator" class="flex items-center gap-2 text-sm">
+                            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            <span class="text-blue-100">Firebase 연결됨</span>
+                        </div>
+                        
+                        <div class="text-sm text-blue-100">
+                            <div class="font-semibold" id="admin-email-display">관리자</div>
+                            <div id="current-time"></div>
+                        </div>
+                        <button id="logout-btn" 
+                                class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg font-semibold transition-all">
+                            로그아웃
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 콘텐츠 -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- 알림 메시지 -->
+            <div id="admin-success" class="hidden bg-green-500 text-white p-4 rounded-xl mb-6 fade-in">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span id="admin-success-text">작업이 완료되었습니다.</span>
+                </div>
+            </div>
+
+            <div id="admin-error" class="hidden bg-red-500 text-white p-4 rounded-xl mb-6 fade-in">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span id="admin-error-text">오류가 발생했습니다.</span>
+                </div>
+            </div>
+
+            <!-- 통계 카드 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="stats-card text-white rounded-2xl p-6 admin-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-blue-100 text-sm">전체 신청</p>
+                            <p class="text-3xl font-bold" id="total-applications">0</p>
+                        </div>
+                        <svg class="w-10 h-10 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="stats-card green text-white rounded-2xl p-6 admin-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-green-100 text-sm">당첨자</p>
+                            <p class="text-3xl font-bold" id="selected-applications">0</p>
+                        </div>
+                        <svg class="w-10 h-10 text-green-200" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="stats-card orange text-white rounded-2xl p-6 admin-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-orange-100 text-sm">대기 중</p>
+                            <p class="text-3xl font-bold" id="pending-applications">0</p>
+                        </div>
+                        <svg class="w-10 h-10 text-orange-200" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="stats-card red text-white rounded-2xl p-6 admin-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-red-100 text-sm">탈락자</p>
+                            <p class="text-3xl font-bold" id="rejected-applications">0</p>
+                        </div>
+                        <svg class="w-10 h-10 text-red-200" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 차트 섹션 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white rounded-2xl shadow-lg p-6 admin-card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">콘도별 신청 현황</h3>
+                    <div class="chart-container">
+                        <canvas id="condoChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 admin-card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">일별 신청 현황</h3>
+                    <div class="chart-container">
+                        <canvas id="dateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 제어 패널 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 admin-card">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">추첨 관리</h3>
+                <div class="flex flex-wrap gap-4">
+                    <button id="auto-draw-btn" 
+                            class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:-translate-y-1">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                            </svg>
+                            자동 추첨 실행
+                        </div>
+                    </button>
+                    
+                    <button id="export-btn" 
+                            class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:-translate-y-1">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                            Excel 다운로드
+                        </div>
+                    </button>
+                    
+                    <button id="reset-draw-btn" 
+                            class="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:-translate-y-1">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                            추첨 결과 초기화
+                        </div>
+                    </button>
+
+                    <button id="backup-btn" 
+                            class="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:-translate-y-1">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm3 5a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z"/>
+                            </svg>
+                            데이터 백업
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 신청 목록 -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden admin-card">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <h3 class="text-xl font-bold text-gray-800">신청 목록 관리</h3>
+                        
+                        <!-- 검색 및 필터 -->
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <div class="relative">
+                                <input type="text" 
+                                       placeholder="검색 (이름, 사번, 콘도명)" 
+                                       class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none w-full sm:w-64"
+                                       id="search-input">
+                                <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            
+                            <select id="status-filter" 
+                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                                <option value="">전체 상태</option>
+                                <option value="pending">대기 중</option>
+                                <option value="selected">당첨</option>
+                                <option value="rejected">탈락</option>
+                                <option value="cancelled">취소</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-96">
+                    <table class="w-full admin-table">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <input type="checkbox" id="select-all" class="rounded">
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">신청자</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">콘도명</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">날짜</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">상태</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">신청일</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">액션</th>
+                            </tr>
+                        </thead>
+                        <tbody id="applications-table">
+                            <!-- 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 일괄 액션 -->
+                <div id="bulk-actions" class="hidden p-4 bg-gray-50 border-t">
+                    <div class="flex flex-wrap gap-3">
+                        <button class="bulk-action-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium" 
+                                data-action="selected">
+                            선택한 항목 당첨 처리
+                        </button>
+                        <button class="bulk-action-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium" 
+                                data-action="rejected">
+                            선택한 항목 탈락 처리
+                        </button>
+                        <button class="bulk-action-btn bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium" 
+                                data-action="pending">
+                            선택한 항목 대기 상태로 변경
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 신청 상세 정보 모달 -->
+    <div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto modal-enter">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-gray-900">신청 상세 정보</h3>
+                    <button id="detail-modal-close" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div id="detail-content">
+                    <!-- 동적 내용 -->
+                </div>
+                
+                <div class="mt-6 flex gap-3">
+                    <select id="detail-status" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="pending">대기 중</option>
+                        <option value="selected">당첨</option>
+                        <option value="rejected">탈락</option>
+                        <option value="cancelled">취소</option>
+                    </select>
+                    <button id="update-status-btn" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
+                        상태 변경
+                    </button>
+                    <button id="delete-application-btn" 
+                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium">
+                        삭제
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 확인 모달 -->
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full modal-enter">
+            <div class="p-6">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900" id="confirm-title">확인</h3>
+                        <p class="text-gray-600" id="confirm-message">이 작업을 진행하시겠습니까?</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button id="confirm-cancel" 
+                            class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium">
+                        취소
+                    </button>
+                    <button id="confirm-ok" 
+                            class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                        확인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyC2ddIAkLg8nGAajSlma-GYu_zWeoOVS-0",
+            authDomain: "condo-reservation-2025.firebaseapp.com",
+            projectId: "condo-reservation-2025",
+            storageBucket: "condo-reservation-2025.firebasestorage.app",
+            messagingSenderId: "259218005950",
+            appId: "1:259218005950:web:35ffb751c686e0c27fe3ef"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // 전역 변수
+        let currentApplications = [];
+        let filteredApplications = [];
+        let condoChart = null;
+        let dateChart = null;
+        let selectedApplications = [];
+        let currentUser = null;
+
+        // Firebase Auth 상태 변화 감지
+        auth.onAuthStateChanged((user) => {
+            console.log('Auth 상태 변화:', user ? '로그인됨' : '로그아웃됨');
+            
+            if (user) {
+                currentUser = user;
+                checkAdminPermission(user);
+            } else {
+                currentUser = null;
+                showLoginScreen();
+            }
+        });
+
+        // 관리자 권한 확인
+        async function checkAdminPermission(user) {
+            try {
+                console.log('관리자 권한 확인 중...', user.uid);
+                const adminDoc = await db.collection('admins').doc(user.uid).get();
+                
+                if (adminDoc.exists) {
+                    console.log('관리자 권한 확인됨');
+                    document.getElementById('admin-email-display').textContent = adminDoc.data().email;
+                    showDashboard();
+                } else {
+                    console.log('관리자 권한 없음');
+                    showMessage('error', '관리자 권한이 없습니다.');
+                    auth.signOut();
+                }
+            } catch (error) {
+                console.error('권한 확인 실패:', error);
+                showMessage('error', '권한 확인 중 오류가 발생했습니다.');
+                auth.signOut();
+            }
+        }
+
+        // 로그인 화면 표시
+        function showLoginScreen() {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+        }
+
+        // 대시보드 표시
+        function showDashboard() {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+            initializeDashboard();
+        }
+
+        // 관리자 계정 생성
+        async function createAdminAccount() {
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value.trim();
+            
+            if (!email || !password) {
+                showMessage('error', '이메일과 비밀번호를 입력해주세요.');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('error', '비밀번호는 최소 6자 이상이어야 합니다.');
+                return;
+            }
+
+            const createBtn = document.getElementById('create-admin-btn');
+            const originalText = createBtn.textContent;
+            
+            try {
+                createBtn.disabled = true;
+                createBtn.classList.add('btn-loading');
+                createBtn.textContent = '생성 중...';
+
+                // Firebase Auth 계정 생성
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Firestore에 관리자 권한 저장
+                await db.collection('admins').doc(user.uid).set({
+                    email: email,
+                    role: 'admin',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                console.log('관리자 계정 생성 완료:', user.uid);
+                showMessage('success', '관리자 계정이 생성되었습니다!');
+                
+                // 자동으로 대시보드로 이동 (onAuthStateChanged에서 처리됨)
+                
+            } catch (error) {
+                console.error('계정 생성 실패:', error);
+                
+                let errorMessage = '계정 생성에 실패했습니다.';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = '이미 사용 중인 이메일입니다.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = '올바른 이메일 형식을 입력해주세요.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = '비밀번호가 너무 간단합니다.';
+                }
+                
+                showMessage('error', errorMessage);
+            } finally {
+                createBtn.disabled = false;
+                createBtn.classList.remove('btn-loading');
+                createBtn.textContent = originalText;
+            }
+        }
+
+        // Firebase Auth 기반 관리자 로그인
+        async function adminLogin() {
+            const loginBtn = document.getElementById('login-btn');
+            const loginText = document.getElementById('login-text');
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value.trim();
+            
+            if (!email || !password) {
+                showMessage('error', '이메일과 비밀번호를 입력해주세요.');
+                return;
+            }
+            
+            // 로딩 상태
+            loginBtn.disabled = true;
+            loginBtn.classList.add('btn-loading');
+            loginText.textContent = '로그인 중...';
+            
+            try {
+                console.log('로그인 시도:', email);
+                
+                // Firebase Auth 로그인
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                console.log('Firebase Auth 로그인 성공:', user.uid);
+                // onAuthStateChanged에서 후속 처리 진행
+                
+            } catch (error) {
+                console.error('로그인 실패:', error);
+                
+                let errorMessage = '로그인에 실패했습니다.';
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = '존재하지 않는 계정입니다.';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = '비밀번호가 잘못되었습니다.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = '올바른 이메일 형식을 입력해주세요.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = '너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.';
+                }
+                
+                showMessage('error', errorMessage);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.classList.remove('btn-loading');
+                loginText.textContent = '로그인';
+            }
+        }
+
+        // 로그아웃
+        function adminLogout() {
+            auth.signOut().then(() => {
+                console.log('로그아웃 성공');
+                
+                // 폼 초기화
+                document.getElementById('admin-email').value = 'admin@company.com';
+                document.getElementById('admin-password').value = '';
+                
+                showMessage('success', '로그아웃되었습니다.');
+            }).catch((error) => {
+                console.error('로그아웃 실패:', error);
+                showMessage('error', '로그아웃 중 오류가 발생했습니다.');
+            });
+        }
+
+        // Firebase 연결 상태 확인
+        function checkFirebaseConnection() {
+            console.log('🔥 Firebase 연결 상태 확인 중...');
+            
+            if (!firebase.apps.length) {
+                console.error('❌ Firebase가 초기화되지 않았습니다.');
+                updateFirebaseStatus(false);
+                return false;
+            }
+            
+            console.log('✅ Firebase 초기화 확인됨');
+            updateFirebaseStatus(true);
+            return true;
+        }
+
+        // Firebase 상태 표시 업데이트
+        function updateFirebaseStatus(isConnected) {
+            const indicator = document.getElementById('firebase-status-indicator');
+            if (!indicator) return;
+            
+            if (isConnected) {
+                indicator.innerHTML = `
+                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-blue-100">Firebase 연결됨</span>
+                `;
+            } else {
+                indicator.innerHTML = `
+                    <div class="w-2 h-2 bg-red-400 rounded-full"></div>
+                    <span class="text-blue-100">Firebase 연결 실패</span>
+                `;
+            }
+        }
+
+        // 대시보드 초기화
+        async function initializeDashboard() {
+            console.log('📊 대시보드 초기화 시작...');
+            
+            if (!checkFirebaseConnection()) {
+                showMessage('error', 'Firebase 연결에 실패했습니다.');
+                return;
+            }
+            
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            console.log('⏰ 시간 업데이트 설정 완료');
+            
+            await loadApplications();
+            console.log('📋 신청 데이터 로드 완료');
+            
+            updateStatistics();
+            console.log('📈 통계 업데이트 완료');
+            
+            createCharts();
+            console.log('📊 차트 생성 완료');
+            
+            setupEventListeners();
+            console.log('🎯 이벤트 리스너 설정 완료');
+            
+            console.log('✅ 대시보드 초기화 완료!');
+        }
+
+        // 현재 시간 업데이트
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = 
+                    now.toLocaleString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+            }
+        }
+
+        // 신청 데이터 로드
+        async function loadApplications() {
+            try {
+                console.log('🔄 Firebase에서 신청 데이터 로드 중...');
+                const snapshot = await db.collection('applications').orderBy('createdAt', 'desc').get();
+                currentApplications = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                filteredApplications = [...currentApplications];
+                renderApplicationsTable();
+                console.log('✅ 신청 데이터 로드 완료:', currentApplications.length, '건');
+                
+                if (currentApplications.length === 0) {
+                    console.log('⚠️ 신청 데이터가 없습니다. 먼저 사용자가 신청을 해주세요.');
+                }
+            } catch (error) {
+                console.error('❌ 신청 데이터 로드 실패:', error);
+                showMessage('error', 'Firebase 데이터 로드에 실패했습니다. 네트워크를 확인해주세요.');
+            }
+        }
+
+        // 통계 업데이트
+        function updateStatistics() {
+            const stats = {
+                total: currentApplications.length,
+                selected: currentApplications.filter(app => app.status === 'selected').length,
+                pending: currentApplications.filter(app => app.status === 'pending').length,
+                rejected: currentApplications.filter(app => app.status === 'rejected').length
+            };
+
+            document.getElementById('total-applications').textContent = stats.total;
+            document.getElementById('selected-applications').textContent = stats.selected;
+            document.getElementById('pending-applications').textContent = stats.pending;
+            document.getElementById('rejected-applications').textContent = stats.rejected;
+        }
+
+        // 차트 생성
+        function createCharts() {
+            // 콘도별 차트
+            const condoData = {};
+            currentApplications.forEach(app => {
+                const condo = app.condoName || '알 수 없음';
+                condoData[condo] = (condoData[condo] || 0) + 1;
+            });
+
+            const condoCtx = document.getElementById('condoChart').getContext('2d');
+            if (condoChart) condoChart.destroy();
+            condoChart = new Chart(condoCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(condoData),
+                    datasets: [{
+                        data: Object.values(condoData),
+                        backgroundColor: [
+                            '#3B82F6', '#10B981', '#F59E0B', '#EF4444',
+                            '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // 일별 차트
+            const dateData = {};
+            currentApplications.forEach(app => {
+                if (app.createdAt) {
+                    const date = app.createdAt.toDate().toDateString();
+                    dateData[date] = (dateData[date] || 0) + 1;
+                }
+            });
+
+            const dateCtx = document.getElementById('dateChart').getContext('2d');
+            if (dateChart) dateChart.destroy();
+            dateChart = new Chart(dateCtx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(dateData).slice(-7),
+                    datasets: [{
+                        label: '일별 신청 수',
+                        data: Object.values(dateData).slice(-7),
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // 신청 테이블 렌더링
+        function renderApplicationsTable() {
+            const tbody = document.getElementById('applications-table');
+            tbody.innerHTML = '';
+
+            if (filteredApplications.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            신청 데이터가 없습니다.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filteredApplications.forEach(app => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-100';
+                row.innerHTML = `
+                    <td class="px-6 py-4">
+                        <input type="checkbox" class="application-checkbox rounded" data-id="${app.id}">
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-gray-900">${app.name}</div>
+                        <div class="text-sm text-gray-500">${app.employeeId}</div>
+                        <div class="text-sm text-gray-500">${app.phone}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium">${app.condoName}</div>
+                        <div class="text-sm text-gray-500">${app.condoType}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        ${app.condoDates || app.condoDate}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="status-badge status-${app.status}">
+                            ${getStatusText(app.status)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        ${app.createdAt ? app.createdAt.toDate().toLocaleDateString('ko-KR') : ''}
+                    </td>
+                    <td class="px-6 py-4">
+                        <button class="text-blue-600 hover:text-blue-800 font-medium text-sm" 
+                                onclick="showApplicationDetail('${app.id}')">
+                            상세보기
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            setupCheckboxEvents();
+        }
+
+        // 상태 텍스트 반환
+        function getStatusText(status) {
+            const statusMap = {
+                pending: '대기 중',
+                selected: '당첨',
+                rejected: '탈락',
+                cancelled: '취소'
+            };
+            return statusMap[status] || '알 수 없음';
+        }
+
+        // 체크박스 이벤트 설정
+        function setupCheckboxEvents() {
+            // 전체 선택
+            const selectAllCheckbox = document.getElementById('select-all');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.application-checkbox');
+                    checkboxes.forEach(cb => {
+                        cb.checked = this.checked;
+                    });
+                    updateSelectedApplications();
+                });
+            }
+
+            // 개별 체크박스
+            document.querySelectorAll('.application-checkbox').forEach(cb => {
+                cb.addEventListener('change', updateSelectedApplications);
+            });
+        }
+
+        // 선택된 신청 업데이트
+        function updateSelectedApplications() {
+            selectedApplications = Array.from(document.querySelectorAll('.application-checkbox:checked'))
+                .map(cb => cb.dataset.id);
+            
+            const bulkActions = document.getElementById('bulk-actions');
+            if (selectedApplications.length > 0) {
+                bulkActions.classList.remove('hidden');
+            } else {
+                bulkActions.classList.add('hidden');
+            }
+        }
+
+        // 신청 상세 정보 표시
+        function showApplicationDetail(id) {
+            const app = currentApplications.find(a => a.id === id);
+            if (!app) return;
+
+            const content = document.getElementById('detail-content');
+            content.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">성명</label>
+                        <p class="text-gray-900 font-semibold">${app.name}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">사번</label>
+                        <p class="text-gray-900">${app.employeeId}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">연락처</label>
+                        <p class="text-gray-900">${app.phone}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">신청일</label>
+                        <p class="text-gray-900">${app.createdAt ? app.createdAt.toDate().toLocaleString('ko-KR') : ''}</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">콘도명</label>
+                        <p class="text-gray-900 font-semibold">${app.condoName}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">평형</label>
+                        <p class="text-gray-900">${app.condoType}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">예약일자</label>
+                        <p class="text-gray-900">${app.condoDates || app.condoDate}</p>
+                    </div>
+                    ${app.condoNote ? `
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">유의사항</label>
+                            <p class="text-yellow-700 bg-yellow-100 p-2 rounded">${app.condoNote}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            document.getElementById('detail-status').value = app.status;
+            document.getElementById('detail-modal').classList.remove('hidden');
+            
+            document.getElementById('detail-modal').dataset.applicationId = id;
+        }
+
+        // 상태 업데이트
+        async function updateApplicationStatus(id, newStatus) {
+            try {
+                await db.collection('applications').doc(id).update({
+                    status: newStatus,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                const app = currentApplications.find(a => a.id === id);
+                if (app) {
+                    app.status = newStatus;
+                }
+                
+                renderApplicationsTable();
+                updateStatistics();
+                createCharts();
+                showMessage('success', '상태가 변경되었습니다.');
+            } catch (error) {
+                console.error('상태 업데이트 실패:', error);
+                showMessage('error', '상태 변경에 실패했습니다.');
+            }
+        }
+
+        // 신청 삭제
+        async function deleteApplication(id) {
+            try {
+                await db.collection('applications').doc(id).delete();
+                
+                currentApplications = currentApplications.filter(a => a.id !== id);
+                filteredApplications = filteredApplications.filter(a => a.id !== id);
+                
+                renderApplicationsTable();
+                updateStatistics();
+                createCharts();
+                showMessage('success', '신청이 삭제되었습니다.');
+            } catch (error) {
+                console.error('신청 삭제 실패:', error);
+                showMessage('error', '삭제에 실패했습니다.');
+            }
+        }
+
+        // 자동 추첨
+        async function runAutoDraw() {
+            const pendingApps = currentApplications.filter(app => app.status === 'pending');
+            
+            if (pendingApps.length === 0) {
+                showMessage('error', '추첨할 대기 중인 신청이 없습니다.');
+                return;
+            }
+
+            const condoGroups = {};
+            pendingApps.forEach(app => {
+                const key = `${app.condoName}_${app.condoDate}`;
+                if (!condoGroups[key]) {
+                    condoGroups[key] = [];
+                }
+                condoGroups[key].push(app);
+            });
+
+            try {
+                for (const [condoKey, apps] of Object.entries(condoGroups)) {
+                    if (apps.length > 0) {
+                        const winnerIndex = Math.floor(Math.random() * apps.length);
+                        const winner = apps[winnerIndex];
+                        
+                        await updateApplicationStatus(winner.id, 'selected');
+                        
+                        for (let i = 0; i < apps.length; i++) {
+                            if (i !== winnerIndex) {
+                                await updateApplicationStatus(apps[i].id, 'rejected');
+                            }
+                        }
+                    }
+                }
+                
+                await loadApplications();
+                updateStatistics();
+                createCharts();
+                showMessage('success', '자동 추첨이 완료되었습니다!');
+            } catch (error) {
+                console.error('자동 추첨 실패:', error);
+                showMessage('error', '추첨 처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 추첨 결과 초기화
+        async function resetDraw() {
+            try {
+                const batch = db.batch();
+                currentApplications.forEach(app => {
+                    if (app.status === 'selected' || app.status === 'rejected') {
+                        const ref = db.collection('applications').doc(app.id);
+                        batch.update(ref, { status: 'pending' });
+                    }
+                });
+                
+                await batch.commit();
+                await loadApplications();
+                updateStatistics();
+                createCharts();
+                showMessage('success', '추첨 결과가 초기화되었습니다.');
+            } catch (error) {
+                console.error('추첨 초기화 실패:', error);
+                showMessage('error', '초기화에 실패했습니다.');
+            }
+        }
+
+        // Excel 내보내기
+        function exportToExcel() {
+            let csvContent = "성명,사번,연락처,콘도명,평형,예약일자,상태,신청일\n";
+            
+            currentApplications.forEach(app => {
+                const row = [
+                    app.name,
+                    app.employeeId,
+                    app.phone,
+                    app.condoName,
+                    app.condoType,
+                    app.condoDates || app.condoDate,
+                    getStatusText(app.status),
+                    app.createdAt ? app.createdAt.toDate().toLocaleDateString('ko-KR') : ''
+                ].join(',');
+                csvContent += row + "\n";
+            });
+
+            const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.setAttribute("href", URL.createObjectURL(blob));
+            link.setAttribute("download", `콘도예약신청_${new Date().toISOString().split('T')[0]}.csv`);
+            link.click();
+            
+            showMessage('success', 'Excel 파일이 다운로드되었습니다.');
+        }
+
+        // 데이터 백업
+        async function backupData() {
+            try {
+                const snapshot = await db.collection('applications').get();
+                const data = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], {
+                    type: 'application/json'
+                });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                
+                console.log('백업 완료:', data.length, '건');
+                showMessage('success', `데이터 백업이 완료되었습니다. (${data.length}건)`);
+            } catch (error) {
+                console.error('백업 실패:', error);
+                showMessage('error', '백업에 실패했습니다.');
+            }
+        }
+
+        // 검색 및 필터링
+        function filterApplications() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+
+            filteredApplications = currentApplications.filter(app => {
+                const matchesSearch = 
+                    app.name.toLowerCase().includes(searchTerm) ||
+                    app.employeeId.includes(searchTerm) ||
+                    (app.condoName && app.condoName.toLowerCase().includes(searchTerm));
+                
+                const matchesStatus = !statusFilter || app.status === statusFilter;
+                
+                return matchesSearch && matchesStatus;
+            });
+
+            renderApplicationsTable();
+        }
+
+        // 일괄 상태 변경
+        async function bulkUpdateStatus(newStatus) {
+            if (selectedApplications.length === 0) {
+                showMessage('error', '선택된 신청이 없습니다.');
+                return;
+            }
+
+            try {
+                const batch = db.batch();
+                selectedApplications.forEach(id => {
+                    const ref = db.collection('applications').doc(id);
+                    batch.update(ref, { 
+                        status: newStatus,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                
+                await batch.commit();
+                await loadApplications();
+                updateStatistics();
+                createCharts();
+                showMessage('success', `${selectedApplications.length}건의 상태가 변경되었습니다.`);
+                
+                document.getElementById('select-all').checked = false;
+                updateSelectedApplications();
+            } catch (error) {
+                console.error('일괄 상태 변경 실패:', error);
+                showMessage('error', '상태 변경에 실패했습니다.');
+            }
+        }
+
+        // 확인 모달 표시
+        function showConfirmModal(title, message, callback) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            
+            document.getElementById('confirm-ok').onclick = () => {
+                hideConfirmModal();
+                callback();
+            };
+        }
+
+        // 확인 모달 숨기기
+        function hideConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        // 메시지 표시 (로그인 화면과 대시보드 모두 지원)
+        function showMessage(type, message) {
+            const isLoginScreen = !document.getElementById('login-screen').classList.contains('hidden');
+            
+            if (isLoginScreen) {
+                const element = document.getElementById(`login-${type}`);
+                const textElement = document.getElementById(`login-${type}-text`);
+                
+                if (element && textElement) {
+                    textElement.textContent = message;
+                    element.classList.remove('hidden');
+                    setTimeout(() => element.classList.add('hidden'), 5000);
+                }
+            } else {
+                const element = document.getElementById(`admin-${type}`);
+                const textElement = document.getElementById(`admin-${type}-text`);
+                
+                if (element && textElement) {
+                    textElement.textContent = message;
+                    element.classList.remove('hidden');
+                    setTimeout(() => element.classList.add('hidden'), 5000);
+                }
+            }
+        }
+
+        // 이벤트 리스너 설정 (대시보드용)
+        function setupEventListeners() {
+            // 로그아웃
+            document.getElementById('logout-btn').addEventListener('click', adminLogout);
+
+            // 검색 및 필터
+            document.getElementById('search-input').addEventListener('input', filterApplications);
+            document.getElementById('status-filter').addEventListener('change', filterApplications);
+
+            // 추첨 관리
+            document.getElementById('auto-draw-btn').addEventListener('click', () => {
+                showConfirmModal('자동 추첨', '자동 추첨을 실행하시겠습니까?', runAutoDraw);
+            });
+            
+            document.getElementById('reset-draw-btn').addEventListener('click', () => {
+                showConfirmModal('추첨 초기화', '모든 추첨 결과를 초기화하시겠습니까?', resetDraw);
+            });
+            
+            document.getElementById('export-btn').addEventListener('click', exportToExcel);
+            document.getElementById('backup-btn').addEventListener('click', backupData);
+
+            // 모달 관련
+            document.getElementById('detail-modal-close').addEventListener('click', () => {
+                document.getElementById('detail-modal').classList.add('hidden');
+            });
+
+            document.getElementById('update-status-btn').addEventListener('click', () => {
+                const id = document.getElementById('detail-modal').dataset.applicationId;
+                const newStatus = document.getElementById('detail-status').value;
+                updateApplicationStatus(id, newStatus);
+                document.getElementById('detail-modal').classList.add('hidden');
+            });
+
+            document.getElementById('delete-application-btn').addEventListener('click', () => {
+                const id = document.getElementById('detail-modal').dataset.applicationId;
+                showConfirmModal('신청 삭제', '이 신청을 삭제하시겠습니까?', () => {
+                    deleteApplication(id);
+                    document.getElementById('detail-modal').classList.add('hidden');
+                });
+            });
+
+            document.getElementById('confirm-cancel').addEventListener('click', hideConfirmModal);
+
+            // 일괄 액션
+            document.querySelectorAll('.bulk-action-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const action = e.target.dataset.action;
+                    showConfirmModal(
+                        '일괄 처리', 
+                        `선택한 ${selectedApplications.length}건의 신청을 ${getStatusText(action)} 상태로 변경하시겠습니까?`,
+                        () => bulkUpdateStatus(action)
+                    );
+                });
+            });
+        }
+
+        // 전역 함수로 노출
+        window.showApplicationDetail = showApplicationDetail;
+
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 관리자 대시보드 로드 완료');
+            
+            // Firebase 초기화 확인
+            setTimeout(() => {
+                if (firebase.apps.length === 0) {
+                    console.error('❌ Firebase 초기화 실패');
+                    showMessage('error', 'Firebase 연결에 문제가 있습니다.');
+                } else {
+                    console.log('✅ Firebase 초기화 성공');
+                }
+            }, 1000);
+            
+            // 로그인 이벤트 리스너 설정
+            document.getElementById('login-btn').addEventListener('click', () => {
+                console.log('로그인 버튼 클릭됨');
+                adminLogin();
+            });
+            
+            document.getElementById('create-admin-btn').addEventListener('click', () => {
+                console.log('관리자 계정 생성 버튼 클릭됨');
+                createAdminAccount();
+            });
+            
+            document.getElementById('admin-password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    console.log('비밀번호 필드에서 Enter 키 입력');
+                    adminLogin();
+                }
+            });
+            
+            document.getElementById('admin-email').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    console.log('이메일 필드에서 Enter 키 입력');
+                    adminLogin();
+                }
+            });
+            
+            console.log('✅ 로그인 이벤트 리스너 설정 완료');
+        });
+    </script>
+</body>
+</html>

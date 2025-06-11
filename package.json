@@ -1,0 +1,89 @@
+{
+  "name": "condo-reservation-system",
+  "version": "1.0.0",
+  "description": "2025년 하계성수기 법인콘도 예약 신청 및 관리 시스템",
+  "main": "index.html",
+  "scripts": {
+    "start": "firebase serve --port 5000",
+    "dev": "python -m http.server 8000",
+    "build": "echo 'No build step required for static site'",
+    "deploy": "firebase deploy",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:indexes": "firebase deploy --only firestore:indexes",
+    "emulator": "firebase emulators:start",
+    "emulator:ui": "firebase emulators:start --import=./emulator-data",
+    "backup": "firebase firestore:export ./backups/$(date +%Y%m%d_%H%M%S)",
+    "restore": "firebase firestore:import",
+    "test": "echo 'No tests specified'",
+    "lint": "echo 'Linting not configured'",
+    "clean": "rm -rf .firebase dist build",
+    "setup": "npm run install:tools && npm run init:firebase",
+    "install:tools": "npm install -g firebase-tools",
+    "init:firebase": "firebase init",
+    "logs": "firebase functions:log",
+    "open": "firebase open",
+    "validate": "firebase deploy --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/condo-reservation-system.git"
+  },
+  "keywords": [
+    "firebase",
+    "firestore",
+    "reservation",
+    "condo",
+    "web-app",
+    "javascript",
+    "tailwind-css",
+    "chart-js",
+    "management-system"
+  ],
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@company.com",
+    "url": "https://github.com/YOUR_USERNAME"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/condo-reservation-system/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/condo-reservation-system#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "firebase-tools": "^12.0.0"
+  },
+  "dependencies": {},
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "config": {
+    "firebase": {
+      "project": "condo-reservation-2025"
+    }
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/YOUR_USERNAME"
+  },
+  "files": [
+    "index.html",
+    "my-application.html", 
+    "admin.html",
+    "firebase-config.js",
+    "script.js",
+    "styles.css",
+    "firebase.json",
+    "firestore.rules",
+    "firestore.indexes.json"
+  ],
+  "directories": {
+    "doc": "docs"
+  }
+}
