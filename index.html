@@ -24,37 +24,234 @@
         }
     </script>
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css">
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     
-    <!-- Firebase 연결 상태 감지 -->
-    <script>
-        // Firebase 연결 완료 이벤트 리스너
-        window.addEventListener('firebaseReady', function() {
-            console.log("🔥 Firebase 연결 완료!");
-            
-            // UI 업데이트
-            document.getElementById('firebase-status').classList.remove('hidden');
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('main-content').classList.remove('hidden');
-        });
+    <style>
+        /* 커스텀 CSS */
+        .calendar-day {
+            aspect-ratio: 1;
+            min-height: 40px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
 
-        // Firebase 연결 실패 이벤트 리스너
-        window.addEventListener('firebaseError', function(event) {
-            console.error("❌ Firebase 연결 실패:", event.detail);
-            
-            // 에러 UI 표시
-            document.getElementById('loading').innerHTML = `
-                <div class="text-center py-8">
-                    <svg class="w-8 h-8 text-red-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
-                    <p class="text-red-600 font-medium">Firebase 연결에 실패했습니다.</p>
-                    <p class="text-gray-600 text-sm mt-1">설정을 확인해주세요.</p>
-                </div>
-            `;
-        });
-    </script>
+        .calendar-day::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .calendar-day:hover::before {
+            opacity: 1;
+        }
+
+        .calendar-day:not(.text-gray-300):not(.text-gray-400):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .calendar-day.bg-blue-500 {
+            animation: selectedPulse 2s infinite;
+        }
+
+        @keyframes selectedPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+            }
+        }
+
+        #firebase-status {
+            animation: slideInDown 0.5s ease-out;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loading p {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .tab-button {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .tab-button:hover::before {
+            left: 100%;
+        }
+
+        #submit-btn:not(:disabled) {
+            position: relative;
+            overflow: hidden;
+        }
+
+        #submit-btn:not(:disabled)::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        #submit-btn:not(:disabled):hover::before {
+            left: 100%;
+        }
+
+        .condo-option {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .condo-option::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: inherit;
+        }
+
+        .condo-option:hover::after {
+            opacity: 1;
+        }
+
+        .condo-option.border-blue-500 {
+            box-shadow: 0 0 0 1px rgb(59 130 246), 0 4px 16px rgba(59, 130, 246, 0.2);
+        }
+
+        #success-message, #error-message {
+            animation: slideInFromTop 0.5s ease-out;
+        }
+
+        @keyframes slideInFromTop {
+            from {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .condo-row {
+            transition: all 0.2s ease;
+        }
+
+        .condo-row:hover {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+            transform: translateX(4px);
+        }
+
+        .condo-row.bg-blue-50 {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 0 0 1px rgb(59 130 246);
+            transform: translateY(-1px);
+        }
+
+        .bg-gradient-to-r.from-blue-600 {
+            background-size: 200% 200%;
+            animation: gradientShift 8s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        #selected-info {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+            }
+            to {
+                box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .calendar-day {
+                min-height: 35px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
     <div class="min-h-screen p-4 lg:p-8">
@@ -299,10 +496,578 @@
         </div>
     </div>
 
-    <!-- Firebase 설정 불러오기 -->
-    <script type="module" src="firebase-config.js"></script>
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyC2ddIAkLg8nGAajSlma-GYu_zWeoOVS-0",
+            authDomain: "condo-reservation-2025.firebaseapp.com",
+            projectId: "condo-reservation-2025",
+            storageBucket: "condo-reservation-2025.firebasestorage.app",
+            messagingSenderId: "259218005950",
+            appId: "1:259218005950:web:35ffb751c686e0c27fe3ef"
+        };
 
-    <!-- Main JavaScript -->
-    <script type="module" src="script.js"></script>
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // 콘도 데이터
+        const condoData = {
+            '2025-07-25': [
+                { name: '소노호텔앤리조트 쏠비치 양양', type: '패밀리 / 취사', duration: '1박 2일', dates: '2025.07.25~2025.07.26', note: '이용료 선불납입 필수' },
+                { name: '한화리조트 설악 쏘라노', type: '디럭스', duration: '1박 2일', dates: '2025.07.25~2025.07.26', note: '' }
+            ],
+            '2025-07-26': [
+                { name: '한화리조트 설악 쏘라노', type: '디럭스', duration: '1박 2일', dates: '2025.07.26~2025.07.27', note: '' },
+                { name: '오크밸리리조트 밸리 빌리지', type: '31평형', duration: '1박 2일', dates: '2025.07.26~2025.07.27', note: '' },
+                { name: '엘리시안리조트 강촌', type: '패밀리', duration: '1박 2일', dates: '2025.07.26~2025.07.27', note: '' }
+            ],
+            '2025-07-27': [
+                { name: '오크밸리리조트 밸리 빌리지', type: '31평형', duration: '1박 2일', dates: '2025.07.27~2025.07.28', note: '' }
+            ],
+            '2025-08-01': [
+                { name: '오크밸리리조트 밸리 빌리지', type: '31평형', duration: '1박 2일', dates: '2025.08.01~2025.08.02', note: '' },
+                { name: '캔싱턴리조트 경주', type: '디럭스 플러스 마운틴뷰', duration: '1박 2일', dates: '2025.08.01~2025.08.02', note: '' }
+            ],
+            '2025-08-02': [
+                { name: '엘리시안리조트 강촌', type: '패밀리', duration: '1박 2일', dates: '2025.08.02~2025.08.03', note: '' }
+            ],
+            '2025-08-03': [
+                { name: '소노호텔앤리조트 쏠비치 양양', type: '패밀리 / 취사', duration: '1박 2일', dates: '2025.08.03~2025.08.04', note: '이용료 선불납입 필수' },
+                { name: '오크밸리리조트 밸리 빌리지', type: '31평형', duration: '1박 2일', dates: '2025.08.03~2025.08.04', note: '' }
+            ],
+            '2025-08-05': [
+                { name: '캔싱턴리조트 설악 비치', type: '스튜디오 오션뷰 (클린룸)', duration: '1박 2일', dates: '2025.08.05~2025.08.06', note: '' }
+            ],
+            '2025-08-08': [
+                { name: '소노캄 델피노', type: '스위트 / 취사', duration: '1박 2일', dates: '2025.08.08~2025.08.09', note: '이용료 선불납입 필수' },
+                { name: '소노벨 천안', type: '패밀리 / 취사', duration: '1박 2일', dates: '2025.08.08~2025.08.09', note: '이용료 선불납입 필수' }
+            ],
+            '2025-08-10': [
+                { name: '디오션리조트 여수', type: '그린 40평', duration: '2박 3일', dates: '2025.08.10~2025.08.12', note: '이용료 선불납입 필수' }
+            ],
+            '2025-08-14': [
+                { name: '소노벨 변산', type: '패밀리 / 취사', duration: '1박 2일', dates: '2025.08.14~2025.08.16', note: '이용료 선불납입 필수' },
+                { name: '디오션리조트 여수', type: '그린 40평', duration: '2박 3일', dates: '2025.08.14~2025.08.16', note: '이용료 선불납입 필수' }
+            ],
+            '2025-08-15': [
+                { name: '엘리시안리조트 강촌', type: '패밀리', duration: '1박 2일', dates: '2025.08.15~2025.08.16', note: '' }
+            ],
+            '2025-08-17': [
+                { name: '한화리조트 설악 쏘라노', type: '디럭스', duration: '1박 2일', dates: '2025.08.17~2025.08.18', note: '' },
+                { name: '한화리조트 대천 파로스', type: '디럭스', duration: '1박 2일', dates: '2025.08.17~2025.08.18', note: '' },
+                { name: '한화리조트 해운대', type: '디럭스(오륙도뷰)', duration: '1박 2일', dates: '2025.08.17~2025.08.18', note: '' },
+                { name: '캔싱턴리조트 설악 비치', type: '디럭스 오션뷰 (클린룸)', duration: '1박 2일', dates: '2025.08.17~2025.08.18', note: '' }
+            ]
+        };
+
+        // 전역 변수
+        let selectedDate = null;
+        let selectedCondo = null;
+        let selectedCondoData = null;
+        let currentView = 'calendar';
+        let isSubmitting = false;
+
+        // Firebase 유틸리티 함수
+        const FirebaseUtils = {
+            handleError: function(error, userMessage = "오류가 발생했습니다.") {
+                console.error("Firebase Error:", error);
+                const errorElement = document.getElementById('error-message');
+                const errorText = document.getElementById('error-text');
+                if (errorElement && errorText) {
+                    errorText.textContent = userMessage;
+                    errorElement.classList.remove('hidden');
+                    setTimeout(() => errorElement.classList.add('hidden'), 5000);
+                }
+            },
+            showSuccess: function(message = "성공적으로 처리되었습니다.") {
+                const successElement = document.getElementById('success-message');
+                const successText = successElement.querySelector('span');
+                if (successElement && successText) {
+                    successText.textContent = message;
+                    successElement.classList.remove('hidden');
+                    setTimeout(() => successElement.classList.add('hidden'), 5000);
+                }
+            }
+        };
+
+        // 중복 신청 체크
+        async function checkDuplicateApplication(employeeId) {
+            try {
+                const applicationsRef = db.collection('applications');
+                const query = applicationsRef.where('employeeId', '==', employeeId);
+                const snapshot = await query.get();
+                return !snapshot.empty;
+            } catch (error) {
+                console.error('중복 신청 체크 실패:', error);
+                return false;
+            }
+        }
+
+        // 신청 데이터 저장
+        async function saveApplicationToFirebase(applicationData) {
+            try {
+                const applicationsRef = db.collection('applications');
+                const docRef = await applicationsRef.add({
+                    ...applicationData,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'pending',
+                    year: 2025
+                });
+                return docRef.id;
+            } catch (error) {
+                console.error('Firebase 저장 실패:', error);
+                throw error;
+            }
+        }
+
+        // 달력 생성
+        function createCalendar(year, month, containerId) {
+            const container = document.getElementById(containerId);
+            const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
+            
+            container.innerHTML = '';
+            
+            daysOfWeek.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'text-center font-bold py-2 text-gray-600 text-sm';
+                header.textContent = day;
+                container.appendChild(header);
+            });
+
+            const firstDay = new Date(year, month - 1, 1);
+            const startDate = new Date(firstDay);
+            startDate.setDate(firstDay.getDate() - firstDay.getDay());
+
+            for (let i = 0; i < 42; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day text-center py-2 cursor-pointer rounded-lg transition-all duration-200 text-sm font-medium flex items-center justify-center';
+                dayElement.textContent = currentDate.getDate();
+
+                if (currentDate.getMonth() !== month - 1) {
+                    dayElement.classList.add('text-gray-300', 'cursor-default');
+                } else {
+                    const year = currentDate.getFullYear();
+                    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(currentDate.getDate()).padStart(2, '0');
+                    const dateStr = `${year}-${month}-${day}`;
+                    
+                    if (condoData[dateStr]) {
+                        dayElement.classList.add('bg-green-100', 'border-2', 'border-green-400', 'text-green-800', 'hover:bg-green-200');
+                        dayElement.addEventListener('click', () => selectDate(dateStr, dayElement));
+                    } else {
+                        dayElement.classList.add('text-gray-400', 'hover:bg-gray-100');
+                    }
+                }
+
+                container.appendChild(dayElement);
+            }
+        }
+
+        // 날짜 선택
+        function selectDate(dateStr, element) {
+            document.querySelectorAll('.calendar-day').forEach(el => {
+                el.classList.remove('bg-blue-500', 'text-white');
+                if (el.classList.contains('bg-green-100')) {
+                    el.classList.add('bg-green-100', 'border-2', 'border-green-400', 'text-green-800');
+                }
+            });
+
+            document.querySelectorAll('.condo-row').forEach(row => {
+                row.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
+            });
+
+            element.classList.remove('bg-green-100', 'border-green-400', 'text-green-800');
+            element.classList.add('bg-blue-500', 'text-white', 'border-2', 'border-blue-600');
+            selectedDate = dateStr;
+
+            selectedCondo = null;
+            selectedCondoData = null;
+            document.getElementById('selected-info').classList.add('hidden');
+
+            updateCondoOptions(dateStr);
+            updateSubmitButton();
+        }
+
+        // 콘도 옵션 업데이트
+        function updateCondoOptions(dateStr) {
+            const container = document.getElementById('calendar-condo-options');
+            const condos = condoData[dateStr] || [];
+
+            if (condos.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <p class="text-lg">선택한 날짜에 예약 가능한 콘도가 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            condos.forEach((condo, index) => {
+                const option = document.createElement('div');
+                option.className = 'condo-option border-2 border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:border-blue-400 hover:shadow-md';
+                option.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-800 text-lg mb-1">${condo.name}</h4>
+                            <p class="text-gray-600 mb-2">${condo.type} | ${condo.duration}</p>
+                            ${condo.note ? `<div class="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-lg inline-block">※ ${condo.note}</div>` : ''}
+                        </div>
+                        <div class="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1 rounded-lg">
+                            ${condo.dates}
+                        </div>
+                    </div>
+                `;
+
+                option.addEventListener('click', () => selectCondoFromCalendar(option, condo, index));
+                container.appendChild(option);
+            });
+        }
+
+        // 달력에서 콘도 선택
+        function selectCondoFromCalendar(element, condo, index) {
+            document.querySelectorAll('#calendar-condo-options > div').forEach(el => {
+                el.classList.remove('border-blue-500', 'bg-blue-50');
+                el.classList.add('border-gray-200');
+            });
+
+            element.classList.remove('border-gray-200');
+            element.classList.add('border-blue-500', 'bg-blue-50');
+            
+            selectedCondo = condo;
+            selectedCondoData = { ...condo, date: selectedDate };
+
+            updateSelectedInfo();
+            updateSubmitButton();
+        }
+
+        // 리스트 테이블 생성
+        function createCondoTable() {
+            const tbody = document.getElementById('condo-table-body');
+            tbody.innerHTML = '';
+
+            const allCondos = [];
+            Object.entries(condoData).forEach(([date, condos]) => {
+                condos.forEach((condo, index) => {
+                    allCondos.push({
+                        ...condo,
+                        date: date,
+                        uniqueId: `${date}_${index}`
+                    });
+                });
+            });
+
+            allCondos.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            allCondos.forEach((condo, index) => {
+                const row = document.createElement('tr');
+                row.className = 'condo-row hover:bg-gray-50 transition-colors duration-200 cursor-pointer';
+                row.dataset.condoId = condo.uniqueId;
+                row.innerHTML = `
+                    <td class="py-4 px-4 font-medium text-gray-900">${condo.name}</td>
+                    <td class="py-4 px-4 text-gray-700">${condo.type}</td>
+                    <td class="py-4 px-4 text-gray-700">${condo.duration}</td>
+                    <td class="py-4 px-4 text-blue-600 font-medium">${condo.dates}</td>
+                    <td class="py-4 px-4 text-gray-700">${condo.note || '-'}</td>
+                    <td class="py-4 px-4 text-center">
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200" onclick="selectCondoFromList('${condo.uniqueId}', this)">
+                            선택
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 리스트에서 콘도 선택
+        function selectCondoFromList(condoId, button) {
+            document.querySelectorAll('.condo-row').forEach(row => {
+                row.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
+            });
+            
+            const row = button.closest('tr');
+            row.classList.add('bg-blue-50', 'border-l-4', 'border-blue-500');
+
+            const parts = condoId.split('_');
+            if (parts.length >= 2) {
+                const date = parts[0];
+                const index = parseInt(parts[1]);
+                
+                if (condoData[date] && condoData[date][index] !== undefined) {
+                    selectedDate = date;
+                    selectedCondo = condoData[date][index];
+                    selectedCondoData = { ...selectedCondo, date: date };
+
+                    updateSelectedInfo();
+                    updateSubmitButton();
+                }
+            }
+        }
+
+        // 탭 전환
+        function switchView(view) {
+            currentView = view;
+            
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-100', 'text-gray-600');
+            });
+            document.querySelector(`[data-view="${view}"]`).classList.remove('bg-gray-100', 'text-gray-600');
+            document.querySelector(`[data-view="${view}"]`).classList.add('bg-blue-600', 'text-white');
+
+            if (view === 'calendar') {
+                document.getElementById('calendar-view').classList.remove('hidden');
+                document.getElementById('list-view').classList.add('hidden');
+                document.getElementById('calendar-condo-section').classList.remove('hidden');
+                
+                document.querySelectorAll('.calendar-day').forEach(el => {
+                    el.classList.remove('bg-blue-500', 'text-white');
+                });
+                
+                document.getElementById('calendar-condo-options').innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                        </svg>
+                        <p class="text-lg">달력에서 날짜를 선택하면 해당 날짜에 예약 가능한 콘도가 표시됩니다.</p>
+                    </div>
+                `;
+                
+                selectedDate = null;
+            } else {
+                document.getElementById('calendar-view').classList.add('hidden');
+                document.getElementById('list-view').classList.remove('hidden');
+                document.getElementById('calendar-condo-section').classList.add('hidden');
+                
+                if (selectedCondoData) {
+                    updateListSelection();
+                }
+            }
+        }
+
+        // 선택 정보 업데이트
+        function updateSelectedInfo() {
+            if (!selectedCondoData) return;
+
+            const info = document.getElementById('selected-info');
+            document.getElementById('selected-date-text').textContent = formatDate(selectedCondoData.date);
+            document.getElementById('selected-condo-text').textContent = selectedCondoData.name;
+            document.getElementById('selected-type-text').textContent = selectedCondoData.type;
+            document.getElementById('selected-duration-text').textContent = selectedCondoData.duration;
+            
+            const noteElement = document.getElementById('selected-note-text');
+            if (selectedCondoData.note) {
+                noteElement.innerHTML = `<div class="bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-2 rounded-lg mt-3 font-medium">※ ${selectedCondoData.note}</div>`;
+            } else {
+                noteElement.innerHTML = '';
+            }
+
+            info.classList.remove('hidden');
+        }
+
+        // 날짜 포맷팅
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+        }
+
+        // 신청 버튼 상태 업데이트
+        function updateSubmitButton() {
+            const submitBtn = document.getElementById('submit-btn');
+            const name = document.getElementById('applicant-name').value.trim();
+            const employeeId = document.getElementById('employee-id').value.trim();
+            const phone = document.getElementById('phone-number').value.trim();
+
+            if (selectedCondoData && name && employeeId && phone && !isSubmitting) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // 신청 처리
+        async function handleSubmit() {
+            if (isSubmitting) return;
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const submitText = document.getElementById('submit-text');
+            
+            try {
+                isSubmitting = true;
+                submitBtn.disabled = true;
+                submitText.textContent = '처리 중...';
+                
+                const name = document.getElementById('applicant-name').value.trim();
+                const employeeId = document.getElementById('employee-id').value.trim();
+                const phone = document.getElementById('phone-number').value.trim();
+                
+                if (!selectedCondoData) {
+                    throw new Error('콘도를 선택해주세요.');
+                }
+                
+                if (!name || !employeeId || !phone) {
+                    throw new Error('모든 필수 정보를 입력해주세요.');
+                }
+                
+                if (!/^\d+$/.test(employeeId)) {
+                    throw new Error('사번은 숫자만 입력해주세요.');
+                }
+                
+                if (!/^[\d-\s()]+$/.test(phone)) {
+                    throw new Error('올바른 연락처 형식을 입력해주세요.');
+                }
+                
+                const isDuplicate = await checkDuplicateApplication(employeeId);
+                if (isDuplicate) {
+                    throw new Error('이미 신청하신 내역이 있습니다. 중복 신청은 불가능합니다.');
+                }
+                
+                const applicationData = {
+                    employeeId,
+                    name,
+                    phone,
+                    condoName: selectedCondoData.name,
+                    condoType: selectedCondoData.type,
+                    condoDuration: selectedCondoData.duration,
+                    condoDate: selectedCondoData.date,
+                    condoDates: selectedCondoData.dates,
+                    condoNote: selectedCondoData.note || ''
+                };
+                
+                const docId = await saveApplicationToFirebase(applicationData);
+                
+                console.log('신청 완료! 문서 ID:', docId);
+                
+                FirebaseUtils.showSuccess('신청이 완료되었습니다! 추첨 결과는 6월 16일(월) 16시에 발표됩니다.');
+                
+                resetForm();
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+            } catch (error) {
+                console.error('신청 처리 중 오류:', error);
+                FirebaseUtils.handleError(error, error.message);
+            } finally {
+                isSubmitting = false;
+                submitBtn.disabled = false;
+                submitText.textContent = '신청하기';
+                updateSubmitButton();
+            }
+        }
+
+        // 리스트 선택 상태 복원
+        function updateListSelection() {
+            if (!selectedCondoData) return;
+            
+            document.querySelectorAll('.condo-row').forEach(row => {
+                row.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
+            });
+            
+            const targetId = `${selectedCondoData.date}_${findCondoIndex(selectedCondoData.date, selectedCondoData)}`;
+            const targetRow = document.querySelector(`[data-condo-id="${targetId}"]`);
+            if (targetRow) {
+                targetRow.classList.add('bg-blue-50', 'border-l-4', 'border-blue-500');
+            }
+        }
+
+        // 콘도 인덱스 찾기
+        function findCondoIndex(date, targetCondo) {
+            const condos = condoData[date] || [];
+            return condos.findIndex(condo => 
+                condo.name === targetCondo.name && 
+                condo.type === targetCondo.type && 
+                condo.dates === targetCondo.dates
+            );
+        }
+
+        // 폼 초기화
+        function resetForm() {
+            selectedDate = null;
+            selectedCondo = null;
+            selectedCondoData = null;
+
+            document.querySelectorAll('.calendar-day').forEach(el => {
+                el.classList.remove('bg-blue-500', 'text-white', 'border-blue-600');
+            });
+
+            document.querySelectorAll('#calendar-condo-options > div').forEach(el => {
+                el.classList.remove('border-blue-500', 'bg-blue-50');
+                el.classList.add('border-gray-200');
+            });
+
+            document.querySelectorAll('.condo-row').forEach(el => {
+                el.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
+            });
+
+            document.getElementById('selected-info').classList.add('hidden');
+            document.getElementById('calendar-condo-options').innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                    </svg>
+                    <p class="text-lg">달력에서 날짜를 선택하면 해당 날짜에 예약 가능한 콘도가 표시됩니다.</p>
+                </div>
+            `;
+
+            ['applicant-name', 'employee-id', 'phone-number'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+
+            updateSubmitButton();
+        }
+
+        // 초기화
+        function initializeApp() {
+            console.log('🚀 애플리케이션 초기화 시작');
+            
+            createCalendar(2025, 7, 'july-calendar');
+            createCalendar(2025, 8, 'august-calendar');
+            createCondoTable();
+            
+            // 탭 이벤트 리스너
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    switchView(button.dataset.view);
+                });
+            });
+
+            // 입력 필드 이벤트 리스너
+            const inputs = ['applicant-name', 'employee-id', 'phone-number'];
+            inputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', updateSubmitButton);
+                }
+            });
+
+            // 신청 버튼 이벤트
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', handleSubmit);
+            }
+            
+            console.log('✅ 애플리케이션 초기화 완료');
+        }
+
+        // DOM 로드 완료 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("🔥 Firebase 연결 완료!");
+            document.getElementById('firebase-status').classList.remove('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            
+            initializeApp();
+        });
+    </script>
 </body>
 </html>
