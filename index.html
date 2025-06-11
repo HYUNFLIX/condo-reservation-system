@@ -256,12 +256,41 @@
 <body class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
     <div class="min-h-screen p-4 lg:p-8">
         <div class="max-w-7xl mx-auto">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 rounded-3xl shadow-2xl text-white text-center py-12 px-6 mb-8">
-                <h1 class="text-4xl lg:text-5xl font-bold mb-4 tracking-tight">2025년도 하계성수기</h1>
-                <h2 class="text-3xl lg:text-4xl font-bold mb-4">법인콘도 예약 신청</h2>
-                <p class="text-xl text-blue-100 max-w-2xl mx-auto">달력에서 날짜를 선택하거나 리스트에서 원하는 콘도를 선택하세요</p>
-            </div>
+<!-- Header -->
+<div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 rounded-3xl shadow-2xl text-white py-12 px-6 mb-8">
+    <!-- 상단 네비게이션 -->
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+        <div class="flex items-center justify-center sm:justify-start gap-2">
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.84L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.84l-7-3z"/>
+            </svg>
+            <span class="text-xl font-bold">콘도예약</span>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <a href="my-application.html" 
+               class="bg-white bg-opacity-20 hover:bg-opacity-30 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2 text-center">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd"/>
+                </svg>
+                신청 조회
+            </a>
+            <a href="admin.html" 
+               class="bg-white bg-opacity-10 hover:bg-opacity-20 px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-blue-100 text-center">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"/>
+                </svg>
+                관리자
+            </a>
+        </div>
+    </div>
+
+    <!-- 메인 타이틀 -->
+    <div class="text-center">
+        <h1 class="text-4xl lg:text-5xl font-bold mb-4 tracking-tight">2025년도 하계성수기</h1>
+        <h2 class="text-3xl lg:text-4xl font-bold mb-4">법인콘도 예약 신청</h2>
+        <p class="text-xl text-blue-100 max-w-2xl mx-auto">달력에서 날짜를 선택하거나 리스트에서 원하는 콘도를 선택하세요</p>
+    </div>
+</div>
 
             <!-- Deadline Notice -->
             <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 rounded-2xl shadow-lg text-center mb-8 font-semibold">
@@ -272,6 +301,34 @@
                     <span>신청 마감: 6월 13일(금) 17시까지 | 추첨 결과 발표: 6월 16일(월) 16시</span>
                 </div>
             </div>
+<!-- Quick Access Section -->
+<div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl shadow-lg p-6 mb-8">
+    <div class="flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div class="text-center lg:text-left flex-1">
+            <h3 class="text-xl font-bold mb-2 flex items-center justify-center lg:justify-start gap-2">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                이미 신청하셨나요?
+            </h3>
+            <p class="text-emerald-100 text-sm sm:text-base">사번과 성명으로 신청 내역을 확인하고 수정할 수 있습니다</p>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center gap-4 lg:flex-shrink-0">
+            <a href="my-application.html" 
+               class="w-full sm:w-auto bg-white bg-opacity-20 hover:bg-opacity-30 px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2 whitespace-nowrap shadow-lg">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd"/>
+                </svg>
+                내 신청 확인하기
+            </a>
+            <div class="hidden lg:block w-px bg-white bg-opacity-30 h-12"></div>
+            <div class="text-center text-emerald-100 text-sm">
+                <div class="font-semibold">신청 현황</div>
+                <div class="text-xs opacity-80">실시간 업데이트</div>
+            </div>
+        </div>
+    </div>
+</div>			
 
             <!-- Firebase 연결 상태 표시 -->
             <div id="firebase-status" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-8">
@@ -279,7 +336,7 @@
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                     </svg>
-                    <span class="font-medium">🔥 Firebase 연결 완료!</span>
+                    <span class="font-medium">📋 예약 시스템이 준비되었습니다!</span>
                 </div>
             </div>
 
@@ -392,15 +449,31 @@
                 <!-- Right Section - Application Form -->
                 <div class="xl:col-span-1">
                     <div class="bg-white rounded-3xl shadow-xl p-8">
-                        <!-- Success Message -->
-                        <div id="success-message" class="hidden bg-gradient-to-r from-green-500 to-emerald-500 text-white p-4 rounded-xl mb-6 shadow-lg">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                                <span class="font-semibold">신청이 완료되었습니다! 추첨 결과는 6월 16일(월) 16시에 발표됩니다.</span>
-                            </div>
-                        </div>
+<!-- Success Message -->
+<div id="success-message" class="hidden bg-gradient-to-r from-green-500 to-emerald-500 text-white p-4 rounded-xl mb-6 shadow-lg">
+    <div class="flex items-center gap-2 mb-3">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <span class="font-semibold">신청이 완료되었습니다! 추첨 결과는 6월 16일(월) 16시에 발표됩니다.</span>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-3 mt-4">
+        <a href="my-application.html" 
+           class="flex-1 bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg font-semibold text-center transition-all duration-300 flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd"/>
+            </svg>
+            신청 내역 확인
+        </a>
+        <button onclick="location.reload()" 
+                class="flex-1 bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg font-semibold text-center transition-all duration-300 flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+            추가 신청
+        </button>
+    </div>
+</div>
 
                         <!-- Error Message -->
                         <div id="error-message" class="hidden bg-gradient-to-r from-red-500 to-pink-500 text-white p-4 rounded-xl mb-6 shadow-lg">
