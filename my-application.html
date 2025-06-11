@@ -386,6 +386,89 @@
         </div>
     </div>
 
+    <!-- 수정 모달 -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-95">
+            <div class="p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                        </svg>
+                        신청 정보 수정
+                    </h3>
+                    <button id="edit-modal-close" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 현재 신청 정보 -->
+                <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                    <h4 class="font-semibold text-gray-800 mb-2">현재 신청 정보</h4>
+                    <p class="text-gray-600" id="edit-current-info">소노호텔앤리조트 쏠비치 양양 - 패밀리/취사 - 2025.07.25~2025.07.26</p>
+                </div>
+
+                <!-- 신청자 정보 수정 -->
+                <div class="space-y-4 mb-6">
+                    <h4 class="font-semibold text-gray-800">신청자 정보</h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">성명</label>
+                            <input type="text" 
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 transition-all duration-200" 
+                                   id="edit-name" 
+                                   required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">연락처</label>
+                            <input type="tel" 
+                                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 transition-all duration-200" 
+                                   id="edit-phone" 
+                                   required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 콘도 정보 수정 안내 -->
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <h5 class="font-medium text-blue-900 mb-1">콘도 정보 변경 안내</h5>
+                            <p class="text-blue-800 text-sm">
+                                콘도 및 날짜 변경을 원하시면 <strong>신청을 취소</strong>한 후 <strong>새로 신청</strong>해주세요.<br>
+                                여기서는 연락처만 수정할 수 있습니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 버튼들 -->
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button id="edit-modal-cancel" 
+                            class="flex-1 py-3 px-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-xl transition-colors duration-200">
+                        취소
+                    </button>
+                    <button id="edit-modal-save" 
+                            class="flex-1 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors duration-200">
+                        <div class="flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            수정 완료
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Firebase 설정
         const firebaseConfig = {
@@ -625,9 +708,93 @@
                 return;
             }
 
-            // 신청 페이지로 이동 (수정 모드)
-            const editUrl = `index-complete.html?edit=${currentApplication.id}&employeeId=${currentApplication.employeeId}`;
-            window.location.href = editUrl;
+            showEditModal();
+        }
+
+        // 수정 모달 표시
+        function showEditModal() {
+            // 현재 정보로 폼 채우기
+            document.getElementById('edit-name').value = currentApplication.name;
+            document.getElementById('edit-phone').value = currentApplication.phone;
+            document.getElementById('edit-current-info').textContent = 
+                `${currentApplication.condoName} - ${currentApplication.condoType} - ${currentApplication.condoDates}`;
+
+            // 모달 표시
+            const modal = document.getElementById('edit-modal');
+            modal.classList.remove('hidden');
+            modal.querySelector('.bg-white').classList.remove('scale-95');
+            modal.querySelector('.bg-white').classList.add('scale-100');
+        }
+
+        // 수정 모달 숨기기
+        function hideEditModal() {
+            const modal = document.getElementById('edit-modal');
+            modal.querySelector('.bg-white').classList.remove('scale-100');
+            modal.querySelector('.bg-white').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // 신청 정보 저장
+        async function saveApplicationEdit() {
+            const name = document.getElementById('edit-name').value.trim();
+            const phone = document.getElementById('edit-phone').value.trim();
+            const saveBtn = document.getElementById('edit-modal-save');
+
+            // 입력값 검증
+            if (!name || !phone) {
+                Utils.showMessage('error', '모든 필수 정보를 입력해주세요.');
+                return;
+            }
+
+            // 연락처 형식 검증
+            if (!/^[\d-\s()]+$/.test(phone)) {
+                Utils.showMessage('error', '올바른 연락처 형식을 입력해주세요.');
+                return;
+            }
+
+            try {
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = `
+                    <div class="flex items-center justify-center gap-2">
+                        <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        저장 중...
+                    </div>
+                `;
+                saveBtn.disabled = true;
+
+                // Firebase 업데이트
+                await updateApplication(currentApplication.id, {
+                    name: name,
+                    phone: phone
+                });
+
+                // 현재 애플리케이션 정보 업데이트
+                currentApplication.name = name;
+                currentApplication.phone = phone;
+
+                // UI 업데이트
+                showApplicationSection(currentApplication);
+                hideEditModal();
+
+                Utils.showMessage('success', '신청 정보가 성공적으로 수정되었습니다.');
+
+            } catch (error) {
+                console.error('신청 수정 실패:', error);
+                Utils.showMessage('error', '신청 수정 중 오류가 발생했습니다.');
+            } finally {
+                saveBtn.innerHTML = `
+                    <div class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        수정 완료
+                    </div>
+                `;
+                saveBtn.disabled = false;
+            }
         }
 
         // 신청 취소 처리
@@ -697,8 +864,15 @@
             document.getElementById('login-btn').addEventListener('click', handleLogin);
             document.getElementById('edit-btn').addEventListener('click', handleEdit);
             document.getElementById('cancel-btn').addEventListener('click', handleCancel);
+            
+            // 취소 확인 모달 이벤트
             document.getElementById('modal-cancel').addEventListener('click', hideConfirmModal);
             document.getElementById('modal-confirm').addEventListener('click', confirmCancel);
+
+            // 수정 모달 이벤트
+            document.getElementById('edit-modal-close').addEventListener('click', hideEditModal);
+            document.getElementById('edit-modal-cancel').addEventListener('click', hideEditModal);
+            document.getElementById('edit-modal-save').addEventListener('click', saveApplicationEdit);
 
             // Enter 키로 로그인
             document.getElementById('login-employee-id').addEventListener('keypress', function(e) {
@@ -711,6 +885,17 @@
             // 모달 외부 클릭시 닫기
             document.getElementById('confirm-modal').addEventListener('click', function(e) {
                 if (e.target === this) hideConfirmModal();
+            });
+            document.getElementById('edit-modal').addEventListener('click', function(e) {
+                if (e.target === this) hideEditModal();
+            });
+
+            // 수정 모달에서 Enter 키로 저장
+            document.getElementById('edit-name').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') saveApplicationEdit();
+            });
+            document.getElementById('edit-phone').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') saveApplicationEdit();
             });
 
             console.log('✅ 초기화 완료');
