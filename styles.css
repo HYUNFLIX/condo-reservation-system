@@ -1,0 +1,426 @@
+/* ========================================
+   🎨 법인콘도 예약 시스템 커스텀 스타일
+   ======================================== */
+
+/* 전역 설정 */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
+   🗓️ 달력 관련 스타일
+   ======================================== */
+
+.calendar-day {
+    aspect-ratio: 1;
+    min-height: 40px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.calendar-day::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.calendar-day:hover::before {
+    opacity: 1;
+}
+
+/* 달력 날짜 호버 효과 */
+.calendar-day:not(.text-gray-300):not(.text-gray-400):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 선택된 날짜 애니메이션 */
+.calendar-day.bg-blue-500 {
+    animation: selectedPulse 2s infinite;
+}
+
+@keyframes selectedPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+    }
+}
+
+/* ========================================
+   🎨 glassmorphism 효과
+   ======================================== */
+
+.glassmorphism {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+/* ========================================
+   🔥 Firebase 상태 표시 애니메이션
+   ======================================== */
+
+#firebase-status {
+    animation: slideInDown 0.5s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========================================
+   ⚡ 로딩 애니메이션 개선
+   ======================================== */
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 로딩 텍스트 깜빡임 */
+#loading p {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* ========================================
+   🎯 버튼 호버 효과 개선
+   ======================================== */
+
+.tab-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.tab-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.tab-button:hover::before {
+    left: 100%;
+}
+
+/* 신청 버튼 특별 효과 */
+#submit-btn:not(:disabled) {
+    position: relative;
+    overflow: hidden;
+}
+
+#submit-btn:not(:disabled)::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.6s;
+}
+
+#submit-btn:not(:disabled):hover::before {
+    left: 100%;
+}
+
+/* ========================================
+   🏨 콘도 선택 카드 효과
+   ======================================== */
+
+.condo-option {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.condo-option::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: inherit;
+}
+
+.condo-option:hover::after {
+    opacity: 1;
+}
+
+.condo-option.border-blue-500 {
+    box-shadow: 0 0 0 1px rgb(59 130 246), 0 4px 16px rgba(59, 130, 246, 0.2);
+}
+
+/* ========================================
+   🎉 성공/에러 메시지 애니메이션
+   ======================================== */
+
+#success-message, #error-message {
+    animation: slideInFromTop 0.5s ease-out;
+}
+
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 메시지 자동 사라짐 효과 */
+.message-fadeout {
+    animation: fadeOut 0.5s ease-out forwards;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+/* ========================================
+   📱 반응형 개선
+   ======================================== */
+
+/* 모바일에서 달력 간격 조정 */
+@media (max-width: 768px) {
+    .calendar-day {
+        min-height: 35px;
+        font-size: 0.8rem;
+    }
+    
+    /* 모바일에서 테이블 스크롤 개선 */
+    .overflow-x-auto {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+        background: rgba(59, 130, 246, 0.3);
+        border-radius: 2px;
+    }
+}
+
+/* ========================================
+   🎨 입력 필드 포커스 효과
+   ======================================== */
+
+input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 0 0 1px rgb(59 130 246);
+    transform: translateY(-1px);
+}
+
+/* ========================================
+   🌟 특별 효과들
+   ======================================== */
+
+/* 헤더 그라데이션 애니메이션 */
+.bg-gradient-to-r.from-blue-600 {
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* 선택된 예약 정보 카드 글로우 효과 */
+#selected-info {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+    animation: glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+    }
+    to {
+        box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
+    }
+}
+
+/* ========================================
+   🔍 테이블 행 호버 효과 개선
+   ======================================== */
+
+.condo-row {
+    transition: all 0.2s ease;
+}
+
+.condo-row:hover {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+    transform: translateX(4px);
+}
+
+.condo-row.bg-blue-50 {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+    animation: selectedRowPulse 2s ease-in-out infinite;
+}
+
+@keyframes selectedRowPulse {
+    0%, 100% {
+        background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+    }
+    50% {
+        background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+    }
+}
+
+/* ========================================
+   🎯 스크롤바 커스터마이징
+   ======================================== */
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+}
+
+/* Webkit 브라우저 (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.5);
+}
+
+/* ========================================
+   🌙 다크모드 대응 (미래 확장용)
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+    /* 필요시 다크모드 스타일 추가 */
+}
+
+/* ========================================
+   ♿ 접근성 개선
+   ======================================== */
+
+/* 고대비 모드 대응 */
+@media (prefers-contrast: high) {
+    .calendar-day.bg-green-100 {
+        border-width: 3px;
+    }
+    
+    .border-blue-500 {
+        border-width: 3px;
+    }
+}
+
+/* 모션 감소 설정 대응 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ========================================
+   🎨 인쇄 스타일 (보너스)
+   ======================================== */
+
+@media print {
+    body {
+        background: white !important;
+    }
+    
+    .bg-gradient-to-br,
+    .bg-gradient-to-r {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .shadow-xl,
+    .shadow-lg,
+    .shadow-2xl {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+}

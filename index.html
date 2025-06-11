@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025년 하계성수기 법인콘도 예약 신청</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase 연결 상태 감지 -->
+    <script>
+        // Firebase 연결 완료 이벤트 리스너
+        window.addEventListener('firebaseReady', function() {
+            console.log("🔥 Firebase 연결 완료!");
+            
+            // UI 업데이트
+            document.getElementById('firebase-status').classList.remove('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+        });
+
+        // Firebase 연결 실패 이벤트 리스너
+        window.addEventListener('firebaseError', function(event) {
+            console.error("❌ Firebase 연결 실패:", event.detail);
+            
+            // 에러 UI 표시
+            document.getElementById('loading').innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="w-8 h-8 text-red-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <p class="text-red-600 font-medium">Firebase 연결에 실패했습니다.</p>
+                    <p class="text-gray-600 text-sm mt-1">설정을 확인해주세요.</p>
+                </div>
+            `;
+        });
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div class="min-h-screen p-4 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 rounded-3xl shadow-2xl text-white text-center py-12 px-6 mb-8">
+                <h1 class="text-4xl lg:text-5xl font-bold mb-4 tracking-tight">2025년도 하계성수기</h1>
+                <h2 class="text-3xl lg:text-4xl font-bold mb-4">법인콘도 예약 신청</h2>
+                <p class="text-xl text-blue-100 max-w-2xl mx-auto">달력에서 날짜를 선택하거나 리스트에서 원하는 콘도를 선택하세요</p>
+            </div>
+
+            <!-- Deadline Notice -->
+            <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 rounded-2xl shadow-lg text-center mb-8 font-semibold">
+                <div class="flex items-center justify-center gap-2 text-lg">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>신청 마감: 6월 13일(금) 17시까지 | 추첨 결과 발표: 6월 16일(월) 16시</span>
+                </div>
+            </div>
+
+            <!-- Firebase 연결 상태 표시 -->
+            <div id="firebase-status" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-8">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">🔥 Firebase 연결 완료!</span>
+                </div>
+            </div>
+
+            <!-- Loading 표시 -->
+            <div id="loading" class="text-center py-8">
+                <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-gray-600 mt-2">시스템 연결 중...</p>
+            </div>
+
+            <!-- Main Content -->
+            <div id="main-content" class="hidden grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <!-- Left Section - Views -->
+                <div class="xl:col-span-2">
+                    <!-- View Tabs -->
+                    <div class="bg-white rounded-2xl shadow-lg mb-8 overflow-hidden">
+                        <div class="flex">
+                            <button class="tab-button flex-1 py-4 px-6 bg-blue-600 text-white font-semibold text-lg transition-all duration-300 hover:bg-blue-700 active" data-view="calendar">
+                                <div class="flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    달력으로 보기
+                                </div>
+                            </button>
+                            <button class="tab-button flex-1 py-4 px-6 bg-gray-100 text-gray-600 font-semibold text-lg transition-all duration-300 hover:bg-gray-200" data-view="list">
+                                <div class="flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    콘도 리스트로 보기
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Calendar View -->
+                    <div class="bg-white rounded-3xl shadow-xl p-8" id="calendar-view">
+                        <div class="flex flex-col lg:flex-row gap-8 justify-center">
+                            <!-- July Calendar -->
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-lg">
+                                <h3 class="text-2xl font-bold text-blue-800 text-center mb-6">2025년 7월</h3>
+                                <div class="grid grid-cols-7 gap-1" id="july-calendar"></div>
+                            </div>
+                            
+                            <!-- August Calendar -->
+                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 shadow-lg">
+                                <h3 class="text-2xl font-bold text-purple-800 text-center mb-6">2025년 8월</h3>
+                                <div class="grid grid-cols-7 gap-1" id="august-calendar"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Legend -->
+                        <div class="flex justify-center gap-8 mt-8 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <div class="w-5 h-5 bg-green-100 border-2 border-green-400 rounded"></div>
+                                <span class="text-gray-700 font-medium">예약 가능</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-5 h-5 bg-blue-500 rounded"></div>
+                                <span class="text-gray-700 font-medium">선택됨</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- List View -->
+                    <div class="bg-white rounded-3xl shadow-xl overflow-hidden hidden" id="list-view">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                                    <tr>
+                                        <th class="py-4 px-4 text-left font-semibold">법인콘도명</th>
+                                        <th class="py-4 px-4 text-left font-semibold">평형</th>
+                                        <th class="py-4 px-4 text-left font-semibold">이용일수</th>
+                                        <th class="py-4 px-4 text-left font-semibold">예약일자</th>
+                                        <th class="py-4 px-4 text-left font-semibold">비고</th>
+                                        <th class="py-4 px-4 text-center font-semibold">선택</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="condo-table-body" class="divide-y divide-gray-200">
+                                    <!-- 동적으로 생성됨 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Condo Selection (Calendar View) -->
+                    <div class="mt-8" id="calendar-condo-section">
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.84L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.84l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.75 2.524z"/>
+                                </svg>
+                                콘도 선택
+                            </h3>
+                            <div id="calendar-condo-options">
+                                <div class="text-center py-12 text-gray-500">
+                                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <p class="text-lg">달력에서 날짜를 선택하면 해당 날짜에 예약 가능한 콘도가 표시됩니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Section - Application Form -->
+                <div class="xl:col-span-1">
+                    <div class="bg-white rounded-3xl shadow-xl p-8">
+                        <!-- Success Message -->
+                        <div id="success-message" class="hidden bg-gradient-to-r from-green-500 to-emerald-500 text-white p-4 rounded-xl mb-6 shadow-lg">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="font-semibold">신청이 완료되었습니다! 추첨 결과는 6월 16일(월) 16시에 발표됩니다.</span>
+                            </div>
+                        </div>
+
+                        <!-- Error Message -->
+                        <div id="error-message" class="hidden bg-gradient-to-r from-red-500 to-pink-500 text-white p-4 rounded-xl mb-6 shadow-lg">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="font-semibold" id="error-text">오류가 발생했습니다.</span>
+                            </div>
+                        </div>
+
+                        <!-- Selected Condo Info -->
+                        <div id="selected-info" class="hidden bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 mb-8 shadow-lg">
+                            <h4 class="text-lg font-bold text-green-800 mb-4 flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                선택된 예약 정보
+                            </h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold text-green-700">날짜:</span>
+                                    <span class="text-green-900 font-medium" id="selected-date-text"></span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold text-green-700">콘도:</span>
+                                    <span class="text-green-900 font-medium text-right" id="selected-condo-text"></span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold text-green-700">평형:</span>
+                                    <span class="text-green-900 font-medium" id="selected-type-text"></span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold text-green-700">기간:</span>
+                                    <span class="text-green-900 font-medium" id="selected-duration-text"></span>
+                                </div>
+                                <div id="selected-note-text"></div>
+                            </div>
+                        </div>
+
+                        <!-- Application Form -->
+                        <div class="space-y-6">
+                            <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                </svg>
+                                신청자 정보
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">성명</label>
+                                    <input type="text" 
+                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors duration-200" 
+                                           id="applicant-name" 
+                                           placeholder="성명을 입력하세요" 
+                                           required>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">사번</label>
+                                    <input type="text" 
+                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors duration-200" 
+                                           id="employee-id" 
+                                           placeholder="사번을 입력하세요" 
+                                           required>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">연락처</label>
+                                    <input type="tel" 
+                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors duration-200" 
+                                           id="phone-number" 
+                                           placeholder="연락처를 입력하세요" 
+                                           required>
+                                </div>
+                            </div>
+                            
+                            <button id="submit-btn" 
+                                    disabled 
+                                    class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                                <div class="flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span id="submit-text">신청하기</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase 설정 불러오기 -->
+    <script type="module" src="firebase-config.js"></script>
+
+    <!-- Main JavaScript -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
